@@ -1,0 +1,128 @@
+import pygame
+import random
+import sys
+
+# 1. Khởi tạo Pygame
+pygame.init()
+
+# Kích thước màn hình game
+WIDTH = 600
+HEIGHT = 400
+BLOCK_SIZE = 20  # Kích thước mỗi đốt rắn và mồi
+SPEED = 12       # Tốc độ di chuyển của rắn
+
+# Màu sắc (RGB)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED   = (255, 50, 50)
+GREEN = (50, 205, 50)
+
+# Tạo cửa sổ game
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Trò chơi Rắn Săn Mồi")
+
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("arial", 24)
+
+def show_score(score):
+    """Hiển thị điểm số lên màn hình"""
+    score_surface = font.render(f"Điểm: {score}", True, WHITE)
+    screen.blit(score_surface, (10, 10))
+
+def game_loop():
+    # Khởi tạo vị trí ban đầu của rắn
+    snake_x = WIDTH // 2
+    snake_y = HEIGHT // 2
+    
+    # Hướng di chuyển ban đầu (dx, dy)
+    dx = BLOCK_SIZE
+    dy = 0
+    
+    # Thân rắn là một danh sách chứa tọa độ các đốt
+    snake_body = [
+        (snake_x, snake_y),
+        (snake_x - BLOCK_SIZE, snake_y),
+        (snake_x - 2 * BLOCK_SIZE, snake_y)
+    ]
+    
+    # Khởi tạo vị trí mồi ngẫu nhiên
+    food_x = random.randint(0, (WIDTH - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+    food_y = random.randint(0, (HEIGHT - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+    
+    score = 0
+    running = True
+
+    while running:
+        # --- Lắng nghe sự kiện bàn phím ---
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                # Điều khiển rắn (không cho phép quay đầu trực tiếp 180 độ)
+                if event.key == pygame.K_UP and dy == 0:
+                    dx = 0
+                    dy = -BLOCK_SIZE
+                elif event.key == pygame.K_DOWN and dy == 0:
+                    dx = 0
+                    dy = BLOCK_SIZE
+                elif event.key == pygame.K_LEFT and dx == 0:
+                    dx = -BLOCK_SIZE
+                    dy = 0
+                elif event.key == pygame.K_RIGHT and dx == 0:
+                    dx = BLOCK_SIZE
+                    dy = 0
+
+        # --- Cập nhật vị trí rắn ---
+        new_head_x = snake_body[0][0] + dx
+        new_head_y = snake_body[0][1] + dy
+
+        # 1. Kiểm tra va chạm tường (Game Over)
+        if new_head_x < 0 or new_head_x >= WIDTH or new_head_y < 0 or new_head_y >= HEIGHT:
+            break
+
+        # 2. Kiểm tra va chạm thân rắn (Game Over)
+        if (new_head_x, new_head_y) in snake_body:
+            break
+
+        # Thêm đầu mới vào vị trí di chuyển
+        snake_body.insert(0, (new_head_x, new_head_y))
+
+        # 3. Kiểm tra xem rắn có ăn mồi không
+        if new_head_x == food_x and new_head_y == food_y:
+            score += 10
+            # Tạo mồi mới ở vị trí ngẫu nhiên
+            food_x = random.randint(0, (WIDTH - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+            food_y = random.randint(0, (HEIGHT - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+        else:
+            # Nếu không ăn mồi thì xóa đốt cuối cùng để di chuyển tịnh tiến
+            snake_body.pop()
+
+        # --- Vẽ đồ họa ---
+        screen.fill(BLACK) # Xóa màn hình bằng màu đen
+
+        # Vẽ mồi
+        pygame.draw.rect(screen, RED, (food_x, food_y, BLOCK_SIZE, BLOCK_SIZE))
+
+        # Vẽ thân rắn
+        for block in snake_body:
+            pygame.draw.rect(screen, GREEN, (block[0], block[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # Vẽ điểm số
+        show_score(score)
+
+        # Cập nhật hiển thị
+        pygame.display.flip()
+        clock.tick(SPEED)
+
+    # Hiển thị thông báo khi thua
+    screen.fill(BLACK)
+    msg = font.render(f"GAME OVER! Điểm của bạn: {score}", True, RED)
+    screen.blit(msg, (WIDTH // 2 - msg.get_width() // 2, HEIGHT // 2 - 20))
+    pygame.display.flip()
+    pygame.time.wait(2000)
+
+# Chạy game
+if __name__ == "__main__":
+    game_loop()
+    pygame.quit()
